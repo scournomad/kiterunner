@@ -3,6 +3,7 @@ package kiterunner
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
@@ -17,6 +18,41 @@ type Result struct {
 	Target   *http.Target
 	Route    *http.Route
 	Response http.Response
+}
+
+type JsonTarget struct {
+	Hostname string
+	IP       string
+	Port     int
+	IsTLS    bool
+	BasePath string
+	Headers  []http.Header
+}
+
+type JsonRequest struct {
+	Target JsonTarget
+	Route  JsonRoute
+}
+
+type JsonResponse struct {
+	StatusCode    int
+	Words         int
+	Lines         int
+	BodyLength    int
+	HTTPVersion   string
+	Headers       []http.Header
+	Body          []byte
+	URI           string
+	OriginRequest JsonRequest
+}
+
+type JsonRoute struct {
+	Headers []http.Header
+	Path    string
+	Query   string
+	Source  string
+	Method  string
+	Body    []byte
 }
 
 func (r *Result) String() string {
@@ -278,4 +314,37 @@ func LogResult(r *Result, config *Config) {
 			Array("responses", (&r.Response).Flatten()).
 			Msg("")
 	}
+
+	resp := JsonResponse{
+		StatusCode:  r.Response.StatusCode,
+		Words:       r.Response.Words,
+		Lines:       r.Response.Lines,
+		BodyLength:  r.Response.BodyLength,
+		HTTPVersion: r.Response.HTTPVersion,
+		Body:        r.Response.Body,
+		URI:         string(r.Response.URI),
+		OriginRequest: JsonRequest{
+			Target: JsonTarget{
+				Hostname: r.Response.OriginRequest.Target.Hostname,
+				IP:       r.Response.OriginRequest.Target.IP,
+				Port:     r.Response.OriginRequest.Target.Port,
+				IsTLS:    r.Response.OriginRequest.Target.IsTLS,
+				BasePath: r.Response.OriginRequest.Target.BasePath,
+				Headers:  r.Response.OriginRequest.Target.Headers,
+			},
+			Route: JsonRoute{
+				Headers: r.Response.OriginRequest.Route.Headers,
+				Path:    string(r.Response.OriginRequest.Route.Path),
+				Query:   string(r.Response.OriginRequest.Route.Query),
+				Source:  r.Response.OriginRequest.Route.Source,
+				Method:  string(r.Response.OriginRequest.Route.Method),
+				Body:    r.Response.OriginRequest.Route.Body,
+			},
+		},
+	}
+
+	jsonFile, _ := os.OpenFile("results.json", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	jsonData, _ := json.Marshal(resp)
+	_, _ = jsonFile.Write(jsonData)
+	_, _ = jsonFile.WriteString("\n")
 }
