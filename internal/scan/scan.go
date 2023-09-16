@@ -23,15 +23,15 @@ func runWithProgress(ctx context.Context, pbEnabled bool, routes http.RouteMap, 
 	default:
 	}
 
-	var b *ProgressBar
-	max := int64(len(routes.Flatten()))*int64(len(targets)) + int64(len(kiterunner.PreflightCheckRoutes))*int64(len(routes))*int64(len(targets))
-	if pbEnabled {
-		b = NewProgress(max)
-		wcopts = append(wcopts, []kiterunner.ConfigOption{
-			kiterunner.AddProgressBar(b),
-		}...)
-		defer b.Requests.Finish()
-	}
+	// var b *ProgressBar
+	// max := int64(len(routes.Flatten()))*int64(len(targets)) + int64(len(kiterunner.PreflightCheckRoutes))*int64(len(routes))*int64(len(targets))
+	// if pbEnabled {
+	// 	b = NewProgress(max)
+	// 	wcopts = append(wcopts, []kiterunner.ConfigOption{
+	// 		kiterunner.AddProgressBar(b),
+	// 	}...)
+	// 	defer b.Requests.Finish()
+	// }
 	e := kiterunner.NewEngine(routes, wcopts...)
 
 	res, err := e.RunCallback(ctx, targets, kiterunner.LogResult)
